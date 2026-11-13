@@ -30,6 +30,30 @@ def line_fit(xs, ys):
     return a, b, r2
 
 
+def windows(points, width=2):
+    """측정 범위를 0 V에서부터 width V씩 겹치지 않게 나눈 구간 목록.
+
+    음의 전압으로 켜지는 소자는 0~−2, −2~−4, … 로 나눈다. 0 V 반대쪽 측정(IGZO의 −2~0 V)은 넣지 않는다.
+    """
+    end = max((v for v, _ in points), key=abs)
+    sign = 1 if end > 0 else -1
+    return [(sign * k * width, sign * (k + 1) * width) for k in range(int(abs(end) / width + 1e-9))]
+
+
+def turned_on(r):
+    """구동 방향으로 √|I|가 커지는 구간인가. 아니면 이동도를 계산하지 않는다 (a ≤ 0이면 식이 뜻이 없다)."""
+    return r["slope"] * (r["v_from"] + r["v_to"]) > 0
+
+
+def vth_before_window(r):
+    """그 구간에서 나온 문턱전압이 구간 시작점보다 앞에 있는가.
+
+    식은 V가 Vth를 넘은 뒤에만 성립한다. 구간 안이나 뒤에 Vth가 나오면 그 구간의 결과는 식과 어긋난다.
+    """
+    sign = 1 if r["v_from"] + r["v_to"] > 0 else -1
+    return turned_on(r) and sign * r["vth"] <= min(sign * r["v_from"], sign * r["v_to"]) + 1e-9
+
+
 def saturation_fit(points, w, l, v_from, v_to):
     """전압이 v_from과 v_to 사이(양끝 포함)인 점들로 μ와 Vth를 구한다.
 

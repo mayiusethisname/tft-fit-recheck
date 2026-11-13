@@ -42,6 +42,27 @@ class FitTest(unittest.TestCase):
         r = fit.saturation_fit(self.made_device(+1), 20, 4, 8, 12)
         self.assertEqual((r["used_from"], r["used_to"]), (8.0, 10.0))
 
+    def test_windows(self):
+        self.assertEqual(fit.windows(self.made_device(+1)), [(0, 2), (2, 4), (4, 6), (6, 8), (8, 10)])
+        self.assertEqual(fit.windows(self.made_device(-1))[:2], [(0, -2), (-2, -4)])
+
+    def test_constant_mobility_device_gives_same_mu_in_every_window(self):
+        # μ가 일정한 소자라면 Vth(2 V)를 넘은 구간은 모두 같은 μ를 내야 한다.
+        for sign in (+1, -1):
+            pts = self.made_device(sign)
+            rs = [fit.saturation_fit(pts, 20, 4, a, b) for a, b in fit.windows(pts)[2:]]
+            for r in rs:
+                self.assertTrue(fit.vth_before_window(r))
+                self.assertAlmostEqual(r["mu"], 10, places=6)
+
+    def test_window_before_vth_is_flagged(self):
+        # 꺼진 쪽으로 기울어진 구간: 계산하지 않는다.
+        off = fit.saturation_fit([(0, 4e-12), (1, 2e-12), (2, 1e-12)], 20, 4, 0, 2)
+        self.assertFalse(fit.turned_on(off))
+        # Vth(2 V)가 구간(1~3 V) 안에 있으면 식과 어긋난다고 표시한다.
+        pts = [(v / 10, 1e-9 * max(v / 10 - 2, 0) ** 2 + 1e-13) for v in range(10, 31)]
+        self.assertFalse(fit.vth_before_window(fit.saturation_fit(pts, 20, 4, 1, 3)))
+
     def test_too_few_points(self):
         with self.assertRaises(ValueError):
             fit.saturation_fit([(1, 1e-9), (2, 2e-9)], 20, 4, 1, 2)

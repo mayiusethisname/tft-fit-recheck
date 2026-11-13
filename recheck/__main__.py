@@ -2,10 +2,13 @@
 
     python -m recheck files                      원자료 15개 요약
     python -m recheck fit IGZO2004.csv 5.5 9.5   한 구간의 이동도와 문턱전압
+    python -m recheck sweep                      15개 파일을 2 V 구간으로 훑은 요약
+    python -m recheck sweep IGZO2004.csv         파일 하나의 구간별 표
+    python -m recheck case 2                     검수 기준표 2번 (지금은 2, 3번)
 """
 import sys
 
-from recheck import fit, read_raw
+from recheck import cases, fit, read_raw
 
 
 def files():
@@ -32,7 +35,7 @@ def fit_one(name, v_from, v_to):
 
 
 if __name__ == "__main__":
-    commands = {"files": files, "fit": fit_one}
+    commands = {"files": files, "fit": fit_one, "sweep": cases.sweep, "case": lambda n: cases.CASES[n]()}
     try:
         commands[sys.argv[1]](*sys.argv[2:])
     except (IndexError, KeyError, TypeError):
