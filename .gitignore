@@ -1,0 +1,16 @@
+# 원자료는 수업에서 받은 자료라 공개하지 않는다 (docs/adr/0001).
+# 실수로 이 폴더에 복사해도 git에 올라가지 않게 형식째로 막는다.
+*.DAT
+*.dat
+*.JNB
+*.jnb
+*.xfm
+*.csv
+# 결과는 results/*.json 과 site/ 로만 낸다. csv가 꼭 필요해지면 이 줄을 다시 본다.
+
+# 파이썬이 만드는 임시 파일
+__pycache__/
+*.pyc
+
+# Vercel이 PC에 만드는 설정 폴더
+.vercel/
