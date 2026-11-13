@@ -4,7 +4,7 @@
     python -m recheck fit IGZO2004.csv 5.5 9.5   한 구간의 이동도와 문턱전압
     python -m recheck sweep                      15개 파일을 2 V 구간으로 훑은 요약
     python -m recheck sweep IGZO2004.csv         파일 하나의 구간별 표
-    python -m recheck case 2                     검수 기준표 2번 (지금은 2, 3번)
+    python -m recheck case 2                     검수 기준표 2번 (1~5번)
 """
 import sys
 
