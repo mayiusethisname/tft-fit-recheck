@@ -5,10 +5,11 @@
     python -m recheck sweep                      15개 파일을 2 V 구간으로 훑은 요약
     python -m recheck sweep IGZO2004.csv         파일 하나의 구간별 표
     python -m recheck case 2                     검수 기준표 2번 (1~5번)
+    python -m recheck build                      results/ 와 site/ 를 다시 만든다
 """
 import sys
 
-from recheck import cases, fit, read_raw
+from recheck import build, cases, fit, read_raw
 
 
 def files():
@@ -35,7 +36,8 @@ def fit_one(name, v_from, v_to):
 
 
 if __name__ == "__main__":
-    commands = {"files": files, "fit": fit_one, "sweep": cases.sweep, "case": lambda n: cases.CASES[n]()}
+    commands = {"files": files, "fit": fit_one, "sweep": cases.sweep, "case": lambda n: cases.CASES[n](),
+                "build": build.build}
     try:
         commands[sys.argv[1]](*sys.argv[2:])
     except (IndexError, KeyError, TypeError):

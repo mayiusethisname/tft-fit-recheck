@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TFT 피팅 검수 노트</title>
+<meta name="description" content="AI가 낸 TFT 분석 결과를 원자료로 다시 계산해, 사람이 직접 확인해야 할 것을 정리한 기록.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#F4F5F3;color:#1C2128;font-family:'IBM Plex Sans KR',system-ui,sans-serif;font-size:1rem;line-height:1.75;word-break:keep-all;overflow-wrap:break-word}
+a{color:#14525A}a:hover{color:#0B3A40}
+.wrap{max-width:1040px;margin:0 auto;padding:0 5%;box-sizing:content-box}
+nav{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 24px;padding:8px 0;border-bottom:1px solid #CDD1CC}
+nav b{font-weight:700}
+nav div{display:flex;flex-wrap:wrap;gap:0 24px;font-size:.875rem}
+nav a{padding:10px 0;line-height:24px;text-decoration:none}
+header{padding:64px 0 48px}
+h1{margin:0 0 24px;font-size:clamp(2rem,5vw,3rem);line-height:1.35;font-weight:700;letter-spacing:-.02em;max-width:880px}
+h2{margin:0 0 8px;font-size:1.75rem;line-height:1.4;font-weight:700;letter-spacing:-.01em}
+h3{margin:0 0 8px;font-size:1rem;font-weight:700}
+p{margin:0 0 16px;max-width:720px}
+.sub,.note{color:#4A5058}
+.note,.small{font-size:.875rem;line-height:1.7}
+section{border-top:1px solid #1C2128;padding:32px 0 64px}
+.hero{display:flex;flex-wrap:wrap;gap:32px 56px}
+.hero>div{flex:1 1 260px;min-width:0}
+.hero figure{flex:999 1 440px}
+.big{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:clamp(4.5rem,11vw,7rem);line-height:1;color:#B3361B;letter-spacing:-.04em;margin:16px 0}
+.big span{font-family:'IBM Plex Sans KR',sans-serif;font-weight:700;font-size:.4em;letter-spacing:0;margin-left:4px}
+figure{margin:0 0 24px;min-width:0}
+figcaption{font-weight:600;line-height:1.5;margin-bottom:16px}
+figcaption span{font-weight:400;color:#4A5058}
+.bar{display:flex;gap:16px;align-items:center;height:32px;font-family:'IBM Plex Mono',monospace;font-size:.875rem}
+.bar .k{width:104px;flex:none;white-space:nowrap}
+.bar .t{flex:1;min-width:0;border-left:1px solid #1C2128;height:100%;display:flex;align-items:center}
+.bar .t i{display:block;height:16px;background:#6B726E}
+.bar .v{width:72px;flex:none;text-align:right;font-weight:500;white-space:nowrap}
+.bar.max .t i{background:#B3361B}.bar.max .v{color:#B3361B;font-weight:600}
+.bar.off .t i{background:#CDD1CC}.bar.off{color:#4A5058}
+.axis{display:flex;gap:16px;border-top:1px solid #1C2128;font-family:'IBM Plex Mono',monospace;font-size:.875rem;color:#4A5058}
+.axis .k{width:104px;flex:none}.axis .v{width:72px;flex:none}
+.axis .t{flex:1;display:flex;justify-content:space-between;padding-top:4px}
+.scroll{overflow-x:auto;margin-bottom:16px}
+table{width:100%;border-collapse:collapse;line-height:1.6}
+th{text-align:left;font-size:.875rem;font-weight:500;color:#4A5058;padding:8px 24px 8px 0;border-bottom:1px solid #1C2128;white-space:nowrap}
+td{padding:12px 24px 12px 0;border-bottom:1px solid #CDD1CC;vertical-align:top}
+tr:last-child td{border-bottom-color:#1C2128}
+td:first-child{white-space:nowrap}
+td.n,th.n{font-family:'IBM Plex Mono',monospace;font-size:.875rem;text-align:right;white-space:nowrap}
+th.n{font-family:inherit}
+td.warn{color:#B3361B;font-weight:600}
+.state{white-space:nowrap;font-size:.875rem;font-weight:500}
+.state i{display:inline-block;width:14px;height:14px;border:2px solid #1C2128;margin-right:8px;vertical-align:-2px}
+.state.done i{background:#14525A;border-color:#14525A}
+.state small{display:block;font-family:'IBM Plex Mono',monospace;font-weight:400;margin-left:22px}
+.item{border-top:1px solid #CDD1CC;padding:24px 0 8px}
+.item:first-of-type{border-top:0;padding-top:8px}
+code{font-family:'IBM Plex Mono',monospace;font-size:.875rem;background:#E7E9E5;padding:2px 6px}
+ul{margin:0 0 16px;padding-left:20px;max-width:720px}
+li{margin-bottom:8px}
+@media(max-width:640px){.check thead{display:none}.check tr{display:block;padding:12px 0;border-bottom:1px solid #CDD1CC}.check tr:last-child{border-bottom-color:#1C2128}.check td{display:block;border:0;padding:2px 0}}
+footer{border-top:1px solid #1C2128;padding:24px 0 48px;font-size:.875rem;color:#4A5058}
+</style>
+</head>
+<body><div class=wrap>
+<nav><b>TFT 피팅 검수 노트</b><div><a href="#checklist">검수 기준표</a><a href="#recalc">다시 계산</a><a href="#log">AI 협업 기록</a><a href="#limits">한계</a><a href="https://github.com/mayiusethisname/tft-fit-recheck">GitHub</a></div></nav>
+<header>
+<h1>AI가 낸 TFT 분석 결과를 원자료로 다시 계산해, 사람이 직접 확인해야 할 것을 정리한 기록.</h1>
+<p class=sub>대학 실험 수업에서 “직선을 어디에 맞추느냐(피팅 구간)에 따라 값이 달라진다”는 의문이 남았습니다. AI와 분석 도구를 만들었고, AI가 낸 결과를 원자료로 다시 따져 AI에게 맡겨도 되는 일과 사람이 직접 확인해야 하는 일을 검수 기준표로 나눴습니다.</p>
+</header>
+<section class=hero>
+<div>
+<div class=sub>같은 측정 파일에서 피팅 구간만 바꾸면, 이동도가</div>
+<div class=big>19.7<span>배</span></div>
+<div class=sub>달라집니다. 가장 큰 값 56.7(16 ~ 18 V)을 가장 작은 값 2.87(2 ~ 4 V)로 나눈 비율입니다.</div>
+</div>
+<figure><figcaption>그림 1. 구간별 포화 이동도 <span>a-IGZO W20/L4</span></figcaption><div role=img aria-label="구간별 포화 이동도 막대 그림, 단위 cm²/V·s. 0 ~ 2 V 0.739, 2 ~ 4 V 2.87, 4 ~ 6 V 5.18, 6 ~ 8 V 7.46, 8 ~ 10 V 10.3, 10 ~ 12 V 14.5, 12 ~ 14 V 21.8, 14 ~ 16 V 35.2, 16 ~ 18 V 56.7"><div class="bar off"><span class=k>0 ~ 2 V</span><span class=t><i style="width:1.23%"></i></span><span class=v>0.739</span></div><div class="bar "><span class=k>2 ~ 4 V</span><span class=t><i style="width:4.79%"></i></span><span class=v>2.87</span></div><div class="bar "><span class=k>4 ~ 6 V</span><span class=t><i style="width:8.64%"></i></span><span class=v>5.18</span></div><div class="bar "><span class=k>6 ~ 8 V</span><span class=t><i style="width:12.43%"></i></span><span class=v>7.46</span></div><div class="bar "><span class=k>8 ~ 10 V</span><span class=t><i style="width:17.17%"></i></span><span class=v>10.3</span></div><div class="bar "><span class=k>10 ~ 12 V</span><span class=t><i style="width:24.14%"></i></span><span class=v>14.5</span></div><div class="bar "><span class=k>12 ~ 14 V</span><span class=t><i style="width:36.26%"></i></span><span class=v>21.8</span></div><div class="bar "><span class=k>14 ~ 16 V</span><span class=t><i style="width:58.70%"></i></span><span class=v>35.2</span></div><div class="bar max"><span class=k>16 ~ 18 V</span><span class=t><i style="width:94.55%"></i></span><span class=v>56.7</span></div><div class=axis><span class=k></span><span class=t><span>0</span><span>20</span><span>40</span><span>60</span></span><span class=v></span></div></div><p class=note style='margin-top:12px'>단위 cm²/V·s. 연한 막대는 그 구간에서 나온 문턱전압이 구간 시작점보다 앞에 있지 않은 구간입니다.</p></figure>
+</section>
+<section id=checklist>
+<h2>검수 기준표</h2>
+<p class=sub>AI가 낸 결과에서 사람이 직접 확인할 것 다섯 가지입니다. 오른쪽은 이 프로젝트에서 실제로 있었던 일입니다.</p>
+<div class=scroll><table class=check><thead><tr><th scope=col>번호</th><th scope=col style="width:30%">직접 확인할 것</th><th scope=col>이 프로젝트에서 있었던 일</th><th scope=col style="width:144px">확인 상태</th></tr></thead><tbody><tr><td class=n style='text-align:left'>1</td><td><b>숫자가 원자료 그대로 옮겨졌는가</b></td><td><a href='#case1' style='color:inherit;text-decoration:none'>전류 664개가 절댓값으로 바뀌었고, 검사도 같은 변환을 써서 놓쳤습니다</a></td><td><span class=state><i></i>직접 확인 전</span></td></tr><tr><td class=n style='text-align:left'>2</td><td><b>AI가 낸 “여러 후보”가 정말 서로 다른가</b></td><td><a href='#case2' style='color:inherit;text-decoration:none'>후보 3개가 0.5 V씩 밀린 옆 구간이라 값이 1.18배밖에 다르지 않았습니다</a></td><td><span class=state><i></i>직접 확인 전</span></td></tr><tr><td class=n style='text-align:left'>3</td><td><b>계산식이 성립하는 조건인가</b></td><td><a href='#case3' style='color:inherit;text-decoration:none'>식은 이동도가 일정하다고 가정하는데, 세 재료 모두 전압에 따라 달라졌습니다</a></td><td><span class=state><i></i>직접 확인 전</span></td></tr><tr><td class=n style='text-align:left'>4</td><td><b>이 자료로 구할 수 있는 값인가</b></td><td><a href='#case4' style='color:inherit;text-decoration:none'>Poly-Si의 흡수단이 측정 범위 밖인데 밴드갭이 “안정”으로 표시됐습니다</a></td><td><span class=state><i></i>직접 확인 전</span></td></tr><tr><td class=n style='text-align:left'>5</td><td><b>같은 파일 안의 다른 측정과 맞는가</b></td><td><a href='#case5' style='color:inherit;text-decoration:none'>한 소자의 한 측정만 전류가 62.1배 작았습니다</a></td><td><span class=state><i></i>직접 확인 전</span></td></tr></tbody></table></div>
+<p class=note>“직접 확인 전”은 AI가 계산했고 작성자가 아직 같은 명령을 직접 돌려 대조하지 않았다는 뜻입니다. 원자료는 수업에서 여러 해 동안 써 온 측정 파일이라 공개하지 않습니다.</p>
+</section>
+<section id=recalc>
+<h2>다시 계산</h2>
+<p class=sub>항목마다 있었던 일, 원자료에서 다시 계산하는 명령, 그 결과입니다. 아래 숫자는 모두 이 명령들의 출력에서 만들어졌습니다.</p><div class=item id=case1><h3>1. 숫자가 원자료 그대로 옮겨졌는가</h3><p>기존 도구의 3.0 판은 원자료의 전류를 절댓값으로 바꿔 옮겼습니다. 옮긴 뒤의 검사도 같은 변환을 거친 값끼리 비교해서 통과했습니다. 원자료를 다시 세어 보면 그때 공개했던 9개 파일에 음수 전류가 664개, 음수가 있는 파일이 8개입니다.</p><div class=scroll><table><thead><tr><th scope=col>파일</th><th scope=col class=n>측정점</th><th scope=col class=n>음수 전류</th></tr></thead><tbody><tr><td>aSi2002.DAT</td><td class="n">201</td><td class="n">0</td></tr><tr><td>aSi2006.DAT</td><td class="n">201</td><td class="n">1</td></tr><tr><td>aSi2020.DAT</td><td class="n">201</td><td class="n">1</td></tr><tr><td>IGZO2002.csv</td><td class="n">201</td><td class="n">21</td></tr><tr><td>IGZO2004.csv</td><td class="n">201</td><td class="n">21</td></tr><tr><td>IGZO2010.csv</td><td class="n">201</td><td class="n">21</td></tr><tr><td>LTPS1002.DAT</td><td class="n">201</td><td class="n">200</td></tr><tr><td>LTPS1005.DAT</td><td class="n">201</td><td class="n">199</td></tr><tr><td>LTPS1010.DAT</td><td class="n">201</td><td class="n">200</td></tr></tbody></table></div><p class=note>3.0 판의 파일은 기존 저장소의 기록에 남아 있지 않습니다. 여기서 다시 확인한 것은 “원자료에 그런 부호가 그만큼 있다”까지이고, “3.0이 그 부호를 지웠다”는 기존 저장소의 변경 내역이 근거입니다.</p><p class=small>다시 계산하는 명령 <code>python -m recheck case 1</code> &nbsp; <span class=state><i></i>직접 확인 전</span></p></div><div class=item id=case2><h3>2. AI가 낸 “여러 후보”가 정말 서로 다른가</h3><p>기존 도구는 a-IGZO W20/L4에 피팅 구간 후보 3개를 냈습니다. 셋은 0.5 V씩 밀린 옆 구간이어서 이동도가 7.44 ~ 8.76로 비슷했고, 값이 안정적인 것처럼 보였습니다. 같은 파일을 겹치지 않는 2 V 구간으로 나누면 2.87에서 56.7까지 달라집니다.</p><h3>기존 도구의 후보 3개</h3><div class=scroll><table><thead><tr><th scope=col>피팅 구간</th><th scope=col class=n>이동도 (cm²/V·s)</th><th scope=col class=n>문턱전압 (V)</th><th scope=col class=n>R²</th></tr></thead><tbody><tr><td>5 ~ 9 V</td><td class="n">7.445</td><td class="n">2.441</td><td class="n">0.9982</td></tr><tr><td>5.5 ~ 9.5 V</td><td class="n">8.074</td><td class="n">2.631</td><td class="n">0.9982</td></tr><tr><td>6 ~ 10 V</td><td class="n">8.757</td><td class="n">2.834</td><td class="n">0.9982</td></tr></tbody></table></div><h3>겹치지 않는 2 V 구간</h3><div class=scroll><table><thead><tr><th scope=col>피팅 구간</th><th scope=col class=n>이동도 (cm²/V·s)</th><th scope=col class=n>문턱전압 (V)</th><th scope=col class=n>R²</th></tr></thead><tbody><tr><td>2 ~ 4 V</td><td class="n">2.874</td><td class="n">1.029</td><td class="n">0.9975</td></tr><tr><td>4 ~ 6 V</td><td class="n">5.182</td><td class="n">1.786</td><td class="n">0.9992</td></tr><tr><td>6 ~ 8 V</td><td class="n">7.459</td><td class="n">2.486</td><td class="n">0.9995</td></tr><tr><td>8 ~ 10 V</td><td class="n">10.3</td><td class="n">3.317</td><td class="n">0.9995</td></tr><tr><td>10 ~ 12 V</td><td class="n">14.49</td><td class="n">4.373</td><td class="n">0.9994</td></tr><tr><td>12 ~ 14 V</td><td class="n">21.76</td><td class="n">5.789</td><td class="n">0.9992</td></tr><tr><td>14 ~ 16 V</td><td class="n">35.22</td><td class="n">7.557</td><td class="n">0.9990</td></tr><tr><td>16 ~ 18 V</td><td class="n">56.73</td><td class="n">9.343</td><td class="n">0.9994</td></tr></tbody></table></div><p class=note>겹치지 않는 구간의 R²는 모두 0.9975 이상입니다. 직선이 잘 맞는다는 것만으로는 어느 구간이 맞는지 가릴 수 없습니다.</p><p class=small>다시 계산하는 명령 <code>python -m recheck case 2</code> &nbsp; <span class=state><i></i>직접 확인 전</span></p></div><div class=item id=case3><h3>3. 계산식이 성립하는 조건인가</h3><p>포화 영역 식은 이동도가 전압과 무관하게 일정하다고 가정합니다. 세 재료를 같은 방법으로 훑으면 a-IGZO는 계속 커지고, a-Si는 조금씩 커지고(0.118 → 0.411), LTPS는 -12 ~ -10 V에서 184까지 커졌다가 다시 작아집니다.</p><figure><figcaption>그림 2. 구간별 포화 이동도 <span>a-Si W20/L4</span></figcaption><div role=img aria-label="구간별 포화 이동도 막대 그림, 단위 cm²/V·s. 0 ~ 2 V 0.0302, 2 ~ 4 V 0.118, 4 ~ 6 V 0.184, 6 ~ 8 V 0.235, 8 ~ 10 V 0.272, 10 ~ 12 V 0.302, 12 ~ 14 V 0.328, 14 ~ 16 V 0.355, 16 ~ 18 V 0.381, 18 ~ 20 V 0.411"><div class="bar off"><span class=k>0 ~ 2 V</span><span class=t><i style="width:5.04%"></i></span><span class=v>0.0302</span></div><div class="bar "><span class=k>2 ~ 4 V</span><span class=t><i style="width:19.60%"></i></span><span class=v>0.118</span></div><div class="bar "><span class=k>4 ~ 6 V</span><span class=t><i style="width:30.60%"></i></span><span class=v>0.184</span></div><div class="bar "><span class=k>6 ~ 8 V</span><span class=t><i style="width:39.25%"></i></span><span class=v>0.235</span></div><div class="bar "><span class=k>8 ~ 10 V</span><span class=t><i style="width:45.37%"></i></span><span class=v>0.272</span></div><div class="bar "><span class=k>10 ~ 12 V</span><span class=t><i style="width:50.29%"></i></span><span class=v>0.302</span></div><div class="bar "><span class=k>12 ~ 14 V</span><span class=t><i style="width:54.61%"></i></span><span class=v>0.328</span></div><div class="bar "><span class=k>14 ~ 16 V</span><span class=t><i style="width:59.11%"></i></span><span class=v>0.355</span></div><div class="bar "><span class=k>16 ~ 18 V</span><span class=t><i style="width:63.51%"></i></span><span class=v>0.381</span></div><div class="bar max"><span class=k>18 ~ 20 V</span><span class=t><i style="width:68.54%"></i></span><span class=v>0.411</span></div><div class=axis><span class=k></span><span class=t><span>0</span><span>0.2</span><span>0.4</span><span>0.6</span></span><span class=v></span></div></div><p class=note style='margin-top:12px'>단위 cm²/V·s. 연한 막대는 그 구간에서 나온 문턱전압이 구간 시작점보다 앞에 있지 않은 구간입니다.</p></figure><figure><figcaption>그림 3. 구간별 포화 이동도 <span>LTPS W10/L5</span></figcaption><div role=img aria-label="구간별 포화 이동도 막대 그림, 단위 cm²/V·s. -2 ~ 0 V 2.89e-05, -4 ~ -2 V 0.0312, -6 ~ -4 V 11.6, -8 ~ -6 V 109, -10 ~ -8 V 177, -12 ~ -10 V 184, -14 ~ -12 V 170, -16 ~ -14 V 141, -18 ~ -16 V 103, -20 ~ -18 V 19.3"><div class="bar off"><span class=k>-2 ~ 0 V</span><span class=t><i style="width:0.00%"></i></span><span class=v>2.89e-05</span></div><div class="bar off"><span class=k>-4 ~ -2 V</span><span class=t><i style="width:0.02%"></i></span><span class=v>0.0312</span></div><div class="bar off"><span class=k>-6 ~ -4 V</span><span class=t><i style="width:5.80%"></i></span><span class=v>11.6</span></div><div class="bar "><span class=k>-8 ~ -6 V</span><span class=t><i style="width:54.30%"></i></span><span class=v>109</span></div><div class="bar "><span class=k>-10 ~ -8 V</span><span class=t><i style="width:88.49%"></i></span><span class=v>177</span></div><div class="bar max"><span class=k>-12 ~ -10 V</span><span class=t><i style="width:92.00%"></i></span><span class=v>184</span></div><div class="bar "><span class=k>-14 ~ -12 V</span><span class=t><i style="width:85.07%"></i></span><span class=v>170</span></div><div class="bar "><span class=k>-16 ~ -14 V</span><span class=t><i style="width:70.33%"></i></span><span class=v>141</span></div><div class="bar "><span class=k>-18 ~ -16 V</span><span class=t><i style="width:51.36%"></i></span><span class=v>103</span></div><div class="bar "><span class=k>-20 ~ -18 V</span><span class=t><i style="width:9.64%"></i></span><span class=v>19.3</span></div><div class=axis><span class=k></span><span class=t><span>0</span><span>100</span><span>200</span></span><span class=v></span></div></div><p class=note style='margin-top:12px'>단위 cm²/V·s. 연한 막대는 그 구간에서 나온 문턱전압이 구간 시작점보다 앞에 있지 않은 구간입니다.</p></figure><h3>수업 자료의 예시 구간 15 ~ 20 V로 계산하면</h3><div class=scroll><table><thead><tr><th scope=col>파일</th><th scope=col>실제로 쓴 점</th><th scope=col class=n>이동도 (cm²/V·s)</th><th scope=col class=n>R²</th></tr></thead><tbody><tr><td>IGZO2004.csv</td><td>15 ~ 18 V</td><td class="n">51</td><td class="n">0.9981</td></tr><tr><td>aSi2004.DAT</td><td>15 ~ 20 V</td><td class="n">0.389</td><td class="n">0.9998</td></tr><tr><td>LTPS1005.DAT</td><td>-20 ~ -15 V</td><td class="n">75.3</td><td class="n">0.9682</td></tr></tbody></table></div><p class=note>a-IGZO 측정은 18 V에서 끝나므로 예시 구간을 그대로 쓸 수 없습니다. LTPS는 음의 전압으로 켜지는 소자라 −15 ~ −20 V로 계산했습니다.</p><p class=small>다시 계산하는 명령 <code>python -m recheck case 3</code> &nbsp; <span class=state><i></i>직접 확인 전</span></p></div><div class=item id=case4><h3>4. 이 자료로 구할 수 있는 값인가</h3><p>밴드갭은 빛을 흡수하기 시작하는 에너지(흡수단)에서 구합니다. UV–Vis 측정 파일 세 개는 모두 파장 300 ~ 700 nm, 광자 에너지로 1.771 ~ 4.133 eV입니다. 결정질 실리콘의 밴드갭 약 1.1 eV(교과서 값, 파장 약 1127 nm)는 이 범위 밖입니다. 기존 도구는 이 자료에서 Poly-Si의 밴드갭을 계산해 “안정”이라고 표시했습니다.</p><div class=scroll><table><thead><tr><th scope=col>파일</th><th scope=col class=n>측정점</th><th scope=col class=n>파장 (nm)</th><th scope=col class=n>광자 에너지 (eV)</th></tr></thead><tbody><tr><td>a-IGZO.csv</td><td class="n">4001</td><td class="n">300 ~ 700</td><td class="n">1.771 ~ 4.133</td></tr><tr><td>a-Si.csv</td><td class="n">4001</td><td class="n">300 ~ 700</td><td class="n">1.771 ~ 4.133</td></tr><tr><td>poly-Si.csv</td><td class="n">4001</td><td class="n">300 ~ 700</td><td class="n">1.771 ~ 4.133</td></tr></tbody></table></div><p class=small>다시 계산하는 명령 <code>python -m recheck case 4</code> &nbsp; <span class=state><i></i>직접 확인 전</span></p></div><div class=item id=case5><h3>5. 같은 파일 안의 다른 측정과 맞는가</h3><p>한 파일에는 같은 소자를 여러 조건으로 잰 측정이 들어 있습니다. a-IGZO 5개 파일에서 게이트 18 V일 때의 전류를 두 측정에서 꺼내 나눴습니다. 드레인 전압이 더 높은 쪽 전류가 같거나 커야 하므로 비율이 1 이하여야 정상인데, IGZO2002.csv만 62.1입니다. 나머지 넷은 0.551 ~ 0.789입니다.</p><div class=scroll><table><thead><tr><th scope=col>파일</th><th scope=col class=n>드레인 10 V 전류 ÷ 드레인 18 V 전류</th></tr></thead><tbody><tr><td>IGZO2002.csv</td><td class="n warn">62.1</td></tr><tr><td>IGZO2004.csv</td><td class="n">0.551</td></tr><tr><td>IGZO2006.csv</td><td class="n">0.72</td></tr><tr><td>IGZO2008.csv</td><td class="n">0.777</td></tr><tr><td>IGZO2010.csv</td><td class="n">0.789</td></tr></tbody></table></div><p class=note>원인은 알 수 없습니다. 여러 해 전에 측정된 자료라 측정 기록이 없습니다. 이 파일에서 나온 이동도는 믿을 수 없는 값으로 봅니다.</p><p class=small>다시 계산하는 명령 <code>python -m recheck case 5</code> &nbsp; <span class=state><i></i>직접 확인 전</span></p></div></section>
+<section id=log>
+<h2>AI 협업 기록</h2>
+<p class=sub>코드는 AI(Claude)가 썼습니다. 작성자는 방향을 정하고, AI의 제안을 받아들이거나 거절했습니다. 단계마다 있었던 일을 그대로 적은 기록이 저장소의 <a href="https://github.com/mayiusethisname/tft-fit-recheck/blob/main/docs/AI협업기록.md">docs/AI협업기록.md</a>에 있습니다.</p>
+<h3>AI가 틀렸던 것과 찾아낸 방법</h3>
+<ul>
+<li>부탁한 구간이 측정 범위를 넘어도 아무 말 없이 잘린 범위로 계산했습니다. 15 ~ 20 V와 15 ~ 18 V의 결과가 똑같이 나와서 드러났고, 실제로 쓴 범위를 함께 출력하도록 고쳤습니다.</li>
+<li>“몇 배”를 세는 규칙을 숫자를 보기 전에 정했는데, LTPS에서는 통하지 않았습니다. 꺼진 구간의 잡음이 규칙을 통과해 수백만 배라는 숫자가 나왔습니다. 결과를 본 뒤에 규칙을 고치지 않았고, LTPS는 배수 하나로 줄이지 않고 그림 3으로 보여 줍니다.</li>
+<li>첫 화면 시안이 모든 내용을 똑같은 상자에 담아 위계가 없었습니다. 작성자가 보고 거절했습니다.</li>
+<li>수업 자료를 열어 보지 않은 채 질문을 냈습니다. 작성자가 읽으라고 지시한 뒤에야 수업 자료에 피팅 구간을 고르는 기준이 없다는 것을 확인했습니다.</li>
+</ul>
+<h3>작성자가 거절하거나 바꾼 AI의 제안</h3>
+<ul>
+<li>“원자료 공개 허락을 받자”는 제안 대신, 원자료를 아예 올리지 않기로 했습니다.</li>
+<li>기준표 후보 중 “절연막 용량 값의 출처”는 수업 진행을 위한 값이라 따지지 않기로 하고 뺐습니다.</li>
+<li>AI가 추천한 이름 “다시 계산 노트”는 TFT가 들어가지 않아 거절했습니다.</li>
+</ul>
+</section>
+<section id=limits>
+<h2>한계</h2>
+<ul>
+<li>이 기록의 목적은 정확한 소자 값을 내는 것이 아닙니다. 분석에 쓴 TFT 파일 15개는 수업에서 여러 해 동안 써 온 측정 자료이고, 작성자가 직접 측정한 것이 아닙니다.</li>
+<li>절연막 용량은 수업 실습에서 준 값 1.75×10⁻⁸ F/cm²을 세 재료에 똑같이 썼습니다. 이 값이 틀리면 이동도의 절대값은 같은 비율로 틀리지만, 구간에 따라 몇 배 달라지는가는 바뀌지 않습니다.</li>
+<li>채널 폭과 길이는 파일 이름에서 읽었습니다(IGZO2004 → W 20, L 4 µm). 일부만 작성자가 확인했고 나머지는 가정입니다.</li>
+<li>이동도 측정은 드레인과 게이트를 묶어 함께 올린 측정이라고 가정했습니다.</li>
+<li>19.7배는 a-IGZO W20/L4 한 파일을 2 V 구간으로 나눴을 때의 값입니다. 구간을 다르게 나누면 숫자가 달라집니다.</li>
+<li>기준표의 확인 상태가 “직접 확인 전”인 항목은 AI의 계산만 거친 것입니다.</li>
+</ul>
+</section>
+<footer>이 페이지는 <code>python -m recheck build</code> 한 번으로 다시 만들어집니다. 계산 결과 원본은 저장소의 <a href="https://github.com/mayiusethisname/tft-fit-recheck/tree/main/results">results/</a>에 있습니다.</footer>
+</div></body></html>
