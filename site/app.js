@@ -121,4 +121,131 @@ function selfCheck(devices) {
   if (ok !== devices.length) line.style.color = "#B3361B";
 }
 
-if (typeof document !== "undefined") selfCheck(DEVICES); // DEVICES 는 data.js 에 있다
+// ── 화면 ─────────────────────────────────────────────────────
+
+const $ = (id) => document.getElementById(id);
+const num = (x, digits = 3) => String(Number(x.toPrecision(digits)));
+const say = (text) => { $("msg").textContent = text; };
+let current = null; // 지금 그래프에 올라와 있는 소자: {label, w, l, points}
+
+// 소자를 그래프에 올린다. 처음 구간은 구동 방향 측정 범위의 가운데 3분의 1 (결과를 보고 고르는 것이 아니다).
+function select(device) {
+  current = device;
+  $("title").textContent = device.label;
+  $("w").value = device.w ?? "";
+  $("l").value = device.l ?? "";
+  const vs = device.points.map(([v]) => v);
+  for (const id of ["from", "to", "fromRange", "toRange"]) {
+    $(id).min = Math.min(...vs);
+    $(id).max = Math.max(...vs);
+  }
+  const end = vs.reduce((far, v) => (Math.abs(v) > Math.abs(far) ? v : far));
+  $("from").value = $("fromRange").value = Math.round((end / 3) * 10) / 10;
+  $("to").value = $("toRange").value = Math.round(((2 * end) / 3) * 10) / 10;
+  document.querySelectorAll("#icons button").forEach((b, k) => b.setAttribute("aria-pressed", DEVICES[k] === device));
+  render();
+}
+
+function render() {
+  const w = Number($("w").value), l = Number($("l").value), sized = w > 0 && l > 0;
+  const r = saturationFit(current.points, w, l, Number($("from").value), Number($("to").value));
+  const on = r && turnedOn(r);
+  $("mu").textContent = !r ? "구간 안의 점이 3개보다 적습니다" : !on ? "계산 안 함 (기울기가 0 이하)"
+    : !sized ? "W와 L을 적어 주세요" : `${num(r.mu, 4)} cm²/V·s`;
+  $("vth").textContent = on ? `${r.vth.toFixed(2)} V` : "–";
+  $("r2").textContent = r ? r.r2.toFixed(4) : "–";
+  $("used").textContent = r ? `${r.used_from} ~ ${r.used_to} V, ${r.points}점` : "–";
+  drawChart(r, on);
+  drawBars(w, l, sized);
+}
+
+// √|I|–V 곡선, 고른 구간(연한 띠), 맞춘 직선(실선), 직선이 전압 축과 만나는 점 Vth 까지의 연장(점선).
+function drawChart(r, on) {
+  const pts = current.points.map(([v, i]) => [v, Math.sqrt(Math.abs(i))]);
+  const vs = pts.map(([v]) => v), x0 = Math.min(...vs), x1 = Math.max(...vs), top = Math.max(...pts.map(([, s]) => s));
+  const X = (v) => 56 + ((v - x0) / (x1 - x0)) * 408, Y = (s) => 256 - (s / top) * 236;
+  let svg = `<line x1="56" y1="256" x2="464" y2="256" stroke="#1C2128"/><line x1="56" y1="20" x2="56" y2="256" stroke="#1C2128"/>`;
+  for (let v = Math.ceil(x0 / 5) * 5; v <= x1; v += 5) {
+    svg += `<line x1="${X(v)}" y1="256" x2="${X(v)}" y2="261" stroke="#1C2128"/><text x="${X(v)}" y="276" text-anchor="middle">${v}</text>`;
+  }
+  svg += `<text x="464" y="294" text-anchor="end">전압 (V)</text><text x="50" y="260" text-anchor="end">0</text>` +
+    `<text x="50" y="24" text-anchor="end">${top.toExponential(1)}</text><text x="62" y="14">√|I| (√A)</text>`;
+  if (r) {
+    const a = Math.min(r.used_from, r.used_to), b = Math.max(r.used_from, r.used_to);
+    svg += `<rect x="${X(a)}" y="20" width="${X(b) - X(a)}" height="236" fill="#14525A" opacity=".1"/>`;
+  }
+  svg += pts.map(([v, s]) => `<circle cx="${X(v).toFixed(1)}" cy="${Y(s).toFixed(1)}" r="1.6" fill="#6B726E"/>`).join("");
+  if (r) {
+    const line = (v) => r.slope * v + r.intercept;
+    svg += `<line x1="${X(r.used_from)}" y1="${Y(line(r.used_from))}" x2="${X(r.used_to)}" y2="${Y(line(r.used_to))}" stroke="#14525A" stroke-width="2.5"/>`;
+    if (on && r.vth >= x0 && r.vth <= x1) {
+      const near = Math.abs(r.used_from - r.vth) < Math.abs(r.used_to - r.vth) ? r.used_from : r.used_to;
+      svg += `<line x1="${X(r.vth)}" y1="256" x2="${X(near)}" y2="${Y(line(near))}" stroke="#14525A" stroke-dasharray="4 4"/>`;
+    }
+  }
+  $("chart").innerHTML = svg; // 숫자로만 만든 글자다. 파일에서 온 글자는 넣지 않는다.
+  $("chart").setAttribute("aria-label", `${current.label}의 √|I|–V 곡선. 측정점 ${pts.length}개, 전압 ${x0} ~ ${x1} V.`);
+}
+
+// 2 V 구간마다 계산한 이동도 막대. 가장 큰 값만 적색, 식과 어긋난 구간은 연하게.
+function drawBars(w, l, sized) {
+  const box = $("bars");
+  box.textContent = "";
+  if (!sized) return;
+  const shown = windows(current.points).map(([a, b]) => saturationFit(current.points, w, l, a, b)).filter((r) => r && turnedOn(r));
+  const top = Math.max(...shown.map((r) => r.mu));
+  for (const r of shown) {
+    const bar = document.createElement("div");
+    bar.className = "bar " + (r.mu === top ? "max" : vthBeforeWindow(r) ? "" : "off");
+    bar.innerHTML = `<span class=k>${r.used_from} ~ ${r.used_to} V</span><span class=t><i style="width:${(100 * r.mu) / top}%"></i></span><span class=v>${num(r.mu)}</span>`;
+    box.append(bar);
+  }
+}
+
+// 방문자가 놓은 파일. 브라우저 안에서만 읽는다.
+function loadFile(file) {
+  if (!file) return;
+  if (file.size > 5e6) return say("읽을 수 없습니다: 파일이 5 MB보다 큽니다");
+  file.text().then((text) => {
+    const points = mobilityPoints(text, file.name);
+    if (points.length < 3) throw new Error("측정점이 3개보다 적습니다");
+    // 수업 파일의 이름 규칙: 끝 네 자리가 W 두 자리 + L 두 자리 (read_raw.py 의 device 와 같다)
+    const m = /^[A-Za-z]+(\d\d)(\d\d)\.[^.]+$/.exec(file.name);
+    select({ label: file.name, w: m ? Number(m[1]) : null, l: m ? Number(m[2]) : null, points });
+    say(m ? `${file.name}: 파일 이름을 W ${Number(m[1])}, L ${Number(m[2])}로 읽었습니다. 다르면 고쳐 주세요.` : `${file.name}: W와 L을 적어 주세요.`);
+  }).catch((e) => say(`읽을 수 없습니다: ${e.message}`));
+}
+
+function start() {
+  DEVICES.forEach((device, k) => {
+    const [material, size] = device.label.split(" · ");
+    const b = document.createElement("button");
+    b.type = "button";
+    b.draggable = true;
+    b.innerHTML = `<b>${material}</b>${size}`; // data.js 는 build.py 가 만든 글자다
+    b.addEventListener("click", () => { select(device); say(""); });
+    b.addEventListener("dragstart", (e) => e.dataTransfer.setData("text/plain", String(k)));
+    $("icons").append(b);
+  });
+  for (const id of ["from", "to", "w", "l"]) $(id).addEventListener("input", () => { if ($(id + "Range")) $(id + "Range").value = $(id).value; render(); });
+  for (const id of ["from", "to"]) $(id + "Range").addEventListener("input", () => { $(id).value = $(id + "Range").value; render(); });
+  $("file").addEventListener("change", (e) => loadFile(e.target.files[0]));
+  // 페이지 어디에 놓아도 브라우저가 그 파일을 열어 버리지 않게 한다.
+  for (const type of ["dragover", "drop"]) document.addEventListener(type, (e) => e.preventDefault());
+  for (const zone of [$("plot"), $("drop")]) {
+    zone.addEventListener("dragover", () => zone.classList.add("over"));
+    zone.addEventListener("dragleave", () => zone.classList.remove("over"));
+    zone.addEventListener("drop", (e) => {
+      zone.classList.remove("over");
+      const device = DEVICES[e.dataTransfer.getData("text/plain")];
+      if (e.dataTransfer.files.length) loadFile(e.dataTransfer.files[0]);
+      else if (device) { select(device); say(""); }
+    });
+  }
+  select(DEVICES.find((d) => d.label === "a-IGZO · W20/L4") ?? DEVICES[0]);
+}
+
+if (typeof document !== "undefined") { // DEVICES 는 data.js 에 있다
+  selfCheck(DEVICES);
+  start();
+}

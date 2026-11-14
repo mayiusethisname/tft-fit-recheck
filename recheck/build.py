@@ -26,7 +26,7 @@ nav{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between
 nav b{font-weight:700}
 nav div{display:flex;flex-wrap:wrap;gap:0 24px;font-size:.875rem}
 nav a{padding:10px 0;line-height:24px;text-decoration:none}
-header{padding:64px 0 48px}
+header{padding:40px 0 32px}
 h1{margin:0 0 24px;font-size:clamp(2rem,5vw,3rem);line-height:1.35;font-weight:700;letter-spacing:-.02em;max-width:880px}
 h2{margin:0 0 8px;font-size:1.75rem;line-height:1.4;font-weight:700;letter-spacing:-.01em}
 h3{margin:0 0 8px;font-size:1rem;font-weight:700}
@@ -34,11 +34,6 @@ p{margin:0 0 16px;max-width:720px}
 .sub,.note{color:#4A5058}
 .note,.small{font-size:.875rem;line-height:1.7}
 section{border-top:1px solid #1C2128;padding:32px 0 64px}
-.hero{display:flex;flex-wrap:wrap;gap:32px 56px}
-.hero>div{flex:1 1 260px;min-width:0}
-.hero figure{flex:999 1 440px}
-.big{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:clamp(4.5rem,11vw,7rem);line-height:1;color:#B3361B;letter-spacing:-.04em;margin:16px 0}
-.big span{font-family:Pretendard,sans-serif;font-weight:700;font-size:.4em;letter-spacing:0;margin-left:4px}
 figure{margin:0 0 24px;min-width:0}
 figcaption{font-weight:600;line-height:1.5;margin-bottom:16px}
 figcaption span{font-weight:400;color:#4A5058}
@@ -72,6 +67,31 @@ ul{margin:0 0 16px;padding-left:20px;max-width:720px}
 li{margin-bottom:8px}
 @media(max-width:640px){.check thead{display:none}.check tr{display:block;padding:12px 0;border-bottom:1px solid #CDD1CC}.check tr:last-child{border-bottom-color:#1C2128}.check td{display:block;border:0;padding:2px 0}}
 footer{border-top:1px solid #1C2128;padding:24px 0 48px;font-size:.875rem;color:#4A5058}
+.tool{display:flex;flex-wrap:wrap;gap:32px 48px}
+.files{flex:1 1 220px;min-width:0}
+.plot{flex:999 1 440px;min-width:0;outline:2px dashed transparent;outline-offset:12px}
+.plot.over{outline-color:#14525A}
+#icons{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px;margin-bottom:16px}
+#icons button{font:inherit;font-size:.875rem;line-height:1.4;text-align:left;padding:10px 12px;min-height:60px;background:#fff;color:inherit;border:1px solid #CDD1CC;border-radius:4px;cursor:grab}
+#icons button b{display:block}
+#icons button:hover{border-color:#1C2128}
+#icons button[aria-pressed=true]{border-color:#1C2128;box-shadow:inset 0 0 0 1px #1C2128}
+.drop{display:block;border:1px dashed #6B726E;border-radius:4px;padding:16px 12px;margin-bottom:12px;text-align:center;font-weight:600;cursor:pointer}
+.drop small{display:block;font-weight:400;color:#4A5058}
+.drop input{position:absolute;opacity:0;width:1px;height:1px}
+.drop:hover,.drop:focus-within{border-color:#14525A;color:#14525A}
+#msg:empty{display:none}#msg{color:#1C2128;font-weight:600}
+#chart{display:block;width:100%;max-width:600px;height:auto;margin:8px 0 16px}
+#chart text{font-size:14px;fill:#4A5058}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:8px 32px;margin-bottom:16px;font-size:.875rem}
+.controls label{display:flex;align-items:center;gap:8px;white-space:nowrap}
+.controls input[type=range]{flex:1;min-width:0;accent-color:#14525A}
+.controls input[type=number]{font:inherit;font-family:'IBM Plex Mono',monospace;width:72px;padding:6px 8px;border:1px solid #6B726E;border-radius:4px;margin-left:auto}
+.controls input[type=range]+input{margin-left:0}
+#result{display:flex;flex-wrap:wrap;gap:8px 40px;margin:0 0 16px;padding:16px 0;border-top:1px solid #1C2128;border-bottom:1px solid #CDD1CC}
+#result dt{font-size:.875rem;color:#4A5058}
+#result dd{margin:0;font-family:'IBM Plex Mono',monospace;font-weight:500}
+#result dd.main{font-size:1.75rem;font-weight:600;line-height:1.3}
 """
 
 
@@ -209,16 +229,37 @@ def page(c):
 <body><div class=wrap>
 <nav><b>TFT 피팅 구간 비교 도구</b><div><a href="#checklist">검수 기준표</a><a href="#recalc">다시 계산</a><a href="#log">AI 협업 기록</a><a href="#limits">한계</a><a href="{REPO_URL}">GitHub</a></div></nav>
 <header>
-<h1>AI가 낸 TFT 분석 결과를 원자료로 다시 계산해, 사람이 직접 확인해야 할 것을 정리한 기록.</h1>
-<p class=sub>대학 실험 수업에서 “직선을 어디에 맞추느냐(피팅 구간)에 따라 값이 달라진다”는 의문이 남았습니다. AI와 분석 도구를 만들었고, AI가 낸 결과를 원자료로 다시 따져 AI에게 맡겨도 되는 일과 사람이 직접 확인해야 하는 일을 검수 기준표로 나눴습니다.</p>
+<h1>TFT 측정 파일을 놓으면 그래프와 이동도를 바로 계산합니다.</h1>
+<p class=sub>실험 수업의 측정 파일은 DAT와 CSV 두 형식이었고, 형식마다 그래프 매크로를 따로 짜야 했습니다. 직선을 맞출 구간(피팅 구간)을 사람이 고르는 것도 값이 흔들리는 원인이었습니다. 이 두 가지를 덜어 보려고 AI와 이 도구를 만들었고, AI가 낸 결과를 원자료로 다시 따져 사람이 직접 확인해야 할 것을 검수 기준표로 정리했습니다.</p>
 </header>
-<section class=hero>
-<div>
-<div class=sub>같은 측정 파일에서 피팅 구간만 바꾸면, 이동도가</div>
-<div class=big>{c2['far_spread']:.1f}<span>배</span></div>
-<div class=sub>달라집니다. 가장 큰 값 {num(hi['mu'])}({span(hi)})을 가장 작은 값 {num(lo['mu'])}({span(lo)})로 나눈 비율입니다.</div>
+<section id=tool class=tool>
+<div class=files>
+<h3>측정 파일</h3>
+<p class=note>아래 파일을 그래프로 끌어다 놓거나 누르세요.</p>
+<div id=icons></div>
+<label id=drop class=drop>내 파일 놓기 또는 고르기<small>DAT · CSV</small><input type=file id=file accept=".dat,.csv"></label>
+<p class=note>놓은 파일은 이 브라우저 안에서만 읽습니다. 어디로도 보내지 않습니다. 수업 장비가 저장한 형식(<code>DATA: MOBILITY</code> 측정이 든 DAT·CSV)을 읽습니다.</p>
+<p id=msg class=note role=status></p>
 </div>
-{bars(c3['sweeps']['IGZO2004.csv'], '그림 1. 구간별 포화 이동도', 'a-IGZO W20/L4')}
+<div id=plot class=plot>
+<h2 id=title></h2>
+<svg id=chart viewBox="0 0 480 300" role=img></svg>
+<div class=controls>
+<label>구간 시작 <input type=range id=fromRange step=0.1 aria-label="구간 시작 조절"><input type=number id=from step=0.1> V</label>
+<label>구간 끝 <input type=range id=toRange step=0.1 aria-label="구간 끝 조절"><input type=number id=to step=0.1> V</label>
+<label>채널 폭 W <input type=number id=w min=0 step=any> µm</label>
+<label>채널 길이 L <input type=number id=l min=0 step=any> µm</label>
+</div>
+<dl id=result aria-live=polite>
+<div><dt>이동도 μ</dt><dd id=mu class=main></dd></div>
+<div><dt>문턱전압 Vth</dt><dd id=vth></dd></div>
+<div><dt>R²</dt><dd id=r2></dd></div>
+<div><dt>쓴 점</dt><dd id=used></dd></div>
+</dl>
+<p class=note>처음 잡혀 있는 구간은 측정 범위의 가운데 3분의 1입니다. 추천이 아닙니다. 구간을 옮기면 값이 바로 바뀝니다.</p>
+<figure><figcaption>그림 1. 2 V 구간마다 계산한 이동도 <span>단위 cm²/V·s</span></figcaption><div id=bars></div>
+<p class=note style="margin-top:12px">연한 막대는 그 구간에서 나온 문턱전압이 구간 시작점보다 앞에 있지 않은 구간입니다. a-IGZO W20/L4는 그런 구간을 빼고도 가장 큰 값 {num(hi['mu'])}({span(hi)})이 가장 작은 값 {num(lo['mu'])}({span(lo)})의 {c2['far_spread']:.1f}배입니다. 직선은 모든 구간에서 잘 맞습니다(R² {r2_min:.4f} 이상). 그래서 이 도구는 구간 하나를 골라 주지 않고 모든 구간의 값을 보여 줍니다.</p></figure>
+</div>
 </section>
 <section id=checklist>
 <h2>검수 기준표</h2>
