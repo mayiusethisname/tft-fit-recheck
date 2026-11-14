@@ -115,10 +115,9 @@ function matchesPython(device) {
 }
 
 function selfCheck(devices) {
-  const ok = devices.filter(matchesPython).length;
-  const line = document.getElementById("selfcheck");
-  line.textContent = `파이썬 계산과 일치: 소자 ${devices.length}개 중 ${ok}개`;
-  if (ok !== devices.length) line.style.color = "#B3361B";
+  const bad = devices.filter((d) => !matchesPython(d)).map((d) => d.label);
+  if (bad.length) console.error("파이썬 계산과 다른 소자:", bad);
+  else console.log(`파이썬 계산과 일치: 소자 ${devices.length}개`);
 }
 
 // ── 화면 ─────────────────────────────────────────────────────

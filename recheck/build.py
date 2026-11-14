@@ -43,11 +43,14 @@ figcaption span{font-weight:400;color:#4A5058}
 ul{margin:0 0 16px;padding-left:20px;max-width:720px}
 li{margin-bottom:8px}
 footer{border-top:1px solid #1C2128;padding:24px 0 48px;font-size:.875rem;color:#4A5058}
-.found{display:grid;grid-template-columns:minmax(180px,260px) 1fr;gap:8px 40px;padding:24px 0;border-top:1px solid #CDD1CC}
+.found{display:grid;grid-template-columns:320px 1fr;gap:8px 40px;padding:24px 0;border-top:1px solid #CDD1CC}
 .found:first-of-type{border-top:0}
 .found .fig{font-family:'IBM Plex Mono',monospace;font-size:1.75rem;font-weight:600;line-height:1.4;white-space:nowrap}
 .found h3{font-size:1.125rem}
 .found p{margin:0}
+.steps{margin:16px 0;padding-left:24px;max-width:720px}
+.steps li{margin-bottom:16px;padding-left:4px}
+.eq{display:block;margin-top:4px;font-family:'IBM Plex Mono',monospace;color:#14525A}
 @media(max-width:640px){.found{grid-template-columns:1fr}}
 .tool{display:flex;flex-wrap:wrap;gap:32px 48px}
 .files{flex:1 1 220px;min-width:0}
@@ -87,28 +90,22 @@ def span(r):
 
 
 def page(c):
-    c1, c2, c4, c5 = c["1"], c["2"], c["4"], c["5"]
-    far, near = c2["far"], c2["near"]
+    c2, c3 = c["2"], c["3"]
+    far = c2["far"]
     lo, hi = min(far, key=lambda r: r["mu"]), max(far, key=lambda r: r["mu"])
-    odd = max(c5["files"], key=lambda f: f["ratio"])
-    uv = c4["files"][0]
     r2_min = min(r["r2"] for r in far)
+    asi = [r for r in c3["sweeps"]["aSi2004.DAT"] if r["valid"]]
+    ltps = [r for r in c3["sweeps"]["LTPS1005.DAT"] if r["valid"]]
+    ltps_top = max(ltps, key=lambda r: r["mu"])
 
-    # 다시 계산해서 찾은 것: (큰 숫자, 제목, 설명). 숫자는 모두 cases.py 에서 온다.
-    found = [
-        (f"{c1['total']}개", "마이너스 부호가 사라졌습니다",
-         "AI가 처음 짠 코드는 음수 전류를 양수로 바꿔 읽었습니다. 원본 파일과 대조해 찾았고, 지금은 부호 그대로 읽습니다."),
-        (f"{c2['near_spread']:.1f}배 → {c2['far_spread']:.0f}배", "후보가 모두 옆자리였습니다",
-         f"AI가 낸 구간 후보 3개는 0.5 V씩만 달라 이동도가 {num(near[0]['mu'])} ~ {num(near[-1]['mu'])}로 비슷했습니다. "
-         f"구간을 넓게 나누자 {num(lo['mu'])} ~ {num(hi['mu'])}로 벌어졌습니다. 그래서 모든 구간을 보여 줍니다."),
-        (f"{c4['si_gap_ev']} eV", "잴 수 없는 값을 계산했습니다",
-         f"빛 측정 범위는 {uv['ev_min']:.2f} ~ {uv['ev_max']:.2f} eV입니다. AI는 그 밖에 있는 실리콘의 밴드갭"
-         f"(약 {c4['si_gap_ev']} eV)까지 계산해 냈습니다. 이 계산은 뺐습니다."),
-        (f"{num(odd['ratio'])}배", "한 파일만 값이 달랐습니다",
-         f"같은 소자를 잰 두 측정을 비교하니 a-IGZO W20/L2만 전류가 {num(odd['ratio'])}배 작았습니다. 원인은 찾지 못했습니다."),
+    # 재료마다 구간에 따라 이동도가 어떻게 달라지는가: (재료, 숫자, 한 줄). 숫자는 cases.py 에서 온다.
+    materials = [
+        ("a-IGZO", f"{num(lo['mu'])} → {num(hi['mu'])}", "전압이 올라갈수록 계속 커집니다."),
+        ("a-Si", f"{num(asi[0]['mu'])} → {num(asi[-1]['mu'])}", "완만하게 커집니다."),
+        ("LTPS", f"{num(ltps[0]['mu'])} → {num(ltps_top['mu'])} → {num(ltps[-1]['mu'])}", "커졌다가 다시 작아집니다."),
     ]
-    found_html = "".join(f"<div class=found><div class=fig>{fig}</div><div><h3>{title}</h3><p>{text}</p></div></div>"
-                         for fig, title, text in found)
+    materials_html = "".join(f"<div class=found><div class=fig>{fig}</div><div><h3>{name}</h3><p>{text}</p></div></div>"
+                             for name, fig, text in materials)
 
     return f"""<!doctype html>
 <html lang="ko">
@@ -122,7 +119,7 @@ def page(c):
 <style>{CSS}</style>
 </head>
 <body><div class=wrap>
-<nav><b>TFT 피팅 구간 비교 도구</b><div><a href="#why">만든 이유</a><a href="#found">찾은 것</a><a href="#limits">한계</a><a href="{REPO_URL}">GitHub</a></div></nav>
+<nav><b>TFT 피팅 구간 비교 도구</b><div><a href="#how">계산 방법</a><a href="#materials">재료별 차이</a><a href="#why">만든 이유</a><a href="{REPO_URL}">GitHub</a></div></nav>
 <header>
 <h1>TFT 측정 파일을 놓으면 이동도를 계산합니다.</h1>
 <p class=sub>이동도는 그래프에 그은 직선의 기울기로 구합니다. 그런데 직선을 어느 구간에 긋느냐에 따라 기울기가 달라집니다. 같은 측정에서 구간만 바꿔도 이동도가 {c2['far_spread']:.0f}배까지 달라집니다. 구간을 직접 옮겨 보세요.</p>
@@ -156,24 +153,33 @@ def page(c):
 <p class=note style="margin-top:12px">연한 막대는 식의 조건에 맞지 않는 구간입니다. a-IGZO W20/L4는 모든 구간에서 직선이 잘 맞는데도(R² {r2_min:.4f} 이상) 이동도가 {num(lo['mu'])} ~ {num(hi['mu'])}, {c2['far_spread']:.1f}배 차이 납니다.</p></figure>
 </div>
 </section>
+<section id=how>
+<h2>계산 방법</h2>
+<ol class=steps>
+<li><b>전류의 제곱근을 전압에 대해 그립니다.</b> 소자가 켜진 뒤에는 직선에 가까워집니다.<span class=eq>√|I| = a·V + b</span></li>
+<li><b>고른 구간에 직선을 맞춥니다.</b> 기울기 a가 이동도를 정합니다.<span class=eq>μ = 2·L·a² / (C·W)</span></li>
+<li><b>직선이 전압 축과 만나는 점이 문턱전압입니다.</b><span class=eq>Vth = −b / a</span></li>
+</ol>
+<p class=note>W, L은 채널 폭과 길이, C는 절연막 용량(1.75×10⁻⁸ F/cm²)입니다.</p>
+</section>
+<section id=materials>
+<h2>재료마다 다릅니다</h2>
+<p class=sub>2 V 구간을 낮은 전압에서 높은 전압으로 옮길 때의 이동도(cm²/V·s)입니다. 위의 파일을 눌러 비교해 보세요.</p>
+{materials_html}
+</section>
 <section id=why>
 <h2>만든 이유</h2>
-<p>수업의 측정 파일은 DAT와 CSV가 섞여 있어, 형식마다 그래프 매크로를 따로 짜야 했습니다. 직선 구간은 사람이 눈으로 골랐습니다. 이 두 가지를 AI와 함께 자동화했습니다.</p>
+<p>수업의 측정 파일은 DAT와 CSV가 섞여 있어, 형식마다 그래프 매크로를 따로 짜야 했습니다. 직선 구간은 사람이 눈으로 골랐습니다. 파일을 놓기만 하면 그래프가 나오고, 구간에 따른 차이를 한눈에 볼 수 있게 만들었습니다.</p>
 </section>
-<section id=found>
-<h2>다시 계산해서 찾은 것</h2>
-<p class=sub>코드는 AI가 썼습니다. 그 결과를 원본 파일로 다시 계산했습니다.</p>
-{found_html}
-</section>
-<section id=limits>
-<h2>한계</h2>
+<section id=next>
+<h2>다음에 더할 것</h2>
 <ul>
-<li>구간을 골라 주지 않습니다. 이동도가 전압에 따라 변하는 소자에서는 어느 구간도 정답이 아닙니다.</li>
-<li>측정 파일은 수업에서 받은 자료입니다. 직접 측정한 것이 아닙니다.</li>
-<li>절연막 용량은 수업에서 준 값(1.75×10⁻⁸ F/cm²)을 세 재료에 똑같이 썼습니다.</li>
+<li><b>구간 제안.</b> 이동도가 가장 덜 변하는 구간을 찾아 먼저 보여 주기.</li>
+<li><b>다른 장비의 파일.</b> 열 이름이 다른 측정 파일도 읽기.</li>
+<li><b>다른 값.</b> 선형 영역 이동도, 문턱전압 이하 기울기(SS), 점멸비.</li>
 </ul>
 </section>
-<footer>코드와 작업 기록은 <a href="{REPO_URL}">GitHub</a>에 있습니다. <span id="selfcheck"></span></footer>
+<footer><a href="{REPO_URL}">GitHub</a></footer>
 </div><script src="data.js"></script><script src="app.js"></script></body></html>
 """
 
