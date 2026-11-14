@@ -265,8 +265,8 @@ def page(c):
 <li>기준표의 확인 상태가 “직접 확인 전”인 항목은 AI의 계산만 거친 것입니다.</li>
 </ul>
 </section>
-<footer>이 페이지는 <code>python -m recheck build</code> 한 번으로 다시 만들어집니다. 계산 결과 원본은 저장소의 <a href="{REPO_URL}/tree/main/results">results/</a>에 있습니다.</footer>
-</div></body></html>
+<footer>이 페이지는 <code>python -m recheck build</code> 한 번으로 다시 만들어집니다. 계산 결과 원본은 저장소의 <a href="{REPO_URL}/tree/main/results">results/</a>에 있습니다. <span id="selfcheck"></span></footer>
+</div><script src="data.js"></script><script src="app.js"></script></body></html>
 """)
     return "".join(body)
 
@@ -292,5 +292,6 @@ def build():
         devices.append({"label": f"{names[material]} · W{w:g}/L{l:g}", "w": w, "l": l,
                         "points": read_raw.mobility_points(path), "sweep": sweep[name]})
     lines = ",\n".join(json.dumps(d, ensure_ascii=False, separators=(",", ":")) for d in devices)
-    (ROOT / "site" / "data.json").write_text(f"[\n{lines}\n]\n", encoding="utf-8", newline="\n")
-    print("썼습니다: results/cases.json, results/sweep.json, site/index.html, site/data.json")
+    # 스크립트 파일로 쓴다. JSON 파일을 따로 불러오는 방식은 index.html을 더블클릭으로 열면 막힌다.
+    (ROOT / "site" / "data.js").write_text(f"const DEVICES = [\n{lines}\n];\n", encoding="utf-8", newline="\n")
+    print("썼습니다: results/cases.json, results/sweep.json, site/index.html, site/data.js")
