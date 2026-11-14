@@ -19,7 +19,7 @@ CONFIRMED = {}
 
 CSS = """
 *{box-sizing:border-box}
-body{margin:0;background:#F4F5F3;color:#1C2128;font-family:'IBM Plex Sans KR',system-ui,sans-serif;font-size:1rem;line-height:1.75;word-break:keep-all;overflow-wrap:break-word}
+body{margin:0;background:#FFFFFF;color:#1C2128;font-family:Pretendard,system-ui,sans-serif;font-size:1rem;line-height:1.75;word-break:keep-all;overflow-wrap:break-word}
 a{color:#14525A}a:hover{color:#0B3A40}
 .wrap{max-width:1040px;margin:0 auto;padding:0 5%;box-sizing:content-box}
 nav{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 24px;padding:8px 0;border-bottom:1px solid #CDD1CC}
@@ -38,7 +38,7 @@ section{border-top:1px solid #1C2128;padding:32px 0 64px}
 .hero>div{flex:1 1 260px;min-width:0}
 .hero figure{flex:999 1 440px}
 .big{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:clamp(4.5rem,11vw,7rem);line-height:1;color:#B3361B;letter-spacing:-.04em;margin:16px 0}
-.big span{font-family:'IBM Plex Sans KR',sans-serif;font-weight:700;font-size:.4em;letter-spacing:0;margin-left:4px}
+.big span{font-family:Pretendard,sans-serif;font-weight:700;font-size:.4em;letter-spacing:0;margin-left:4px}
 figure{margin:0 0 24px;min-width:0}
 figcaption{font-weight:600;line-height:1.5;margin-bottom:16px}
 figcaption span{font-weight:400;color:#4A5058}
@@ -200,13 +200,14 @@ def page(c):
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TFT 피팅 검수 노트</title>
+<title>TFT 피팅 구간 비교 도구</title>
 <meta name="description" content="AI가 낸 TFT 분석 결과를 원자료로 다시 계산해, 사람이 직접 확인해야 할 것을 정리한 기록.">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>{CSS}</style>
 </head>
 <body><div class=wrap>
-<nav><b>TFT 피팅 검수 노트</b><div><a href="#checklist">검수 기준표</a><a href="#recalc">다시 계산</a><a href="#log">AI 협업 기록</a><a href="#limits">한계</a><a href="{REPO_URL}">GitHub</a></div></nav>
+<nav><b>TFT 피팅 구간 비교 도구</b><div><a href="#checklist">검수 기준표</a><a href="#recalc">다시 계산</a><a href="#log">AI 협업 기록</a><a href="#limits">한계</a><a href="{REPO_URL}">GitHub</a></div></nav>
 <header>
 <h1>AI가 낸 TFT 분석 결과를 원자료로 다시 계산해, 사람이 직접 확인해야 할 것을 정리한 기록.</h1>
 <p class=sub>대학 실험 수업에서 “직선을 어디에 맞추느냐(피팅 구간)에 따라 값이 달라진다”는 의문이 남았습니다. AI와 분석 도구를 만들었고, AI가 낸 결과를 원자료로 다시 따져 AI에게 맡겨도 되는 일과 사람이 직접 확인해야 하는 일을 검수 기준표로 나눴습니다.</p>
@@ -282,4 +283,14 @@ def build():
     (ROOT / "results" / "cases.json").write_text(dump(public), encoding="utf-8", newline="\n")
     (ROOT / "results" / "sweep.json").write_text(dump(sweep), encoding="utf-8", newline="\n")
     (ROOT / "site" / "index.html").write_text(page(c), encoding="utf-8", newline="\n")
-    print("썼습니다: results/cases.json, results/sweep.json, site/index.html")
+    # 도구 화면용 자료 (adr/0004): 이미 공개돼 있던 9개 소자의 이동도 측정만. 원래 파일 이름은 넣지 않는다.
+    names = {"IGZO": "a-IGZO", "aSi": "a-Si", "LTPS": "LTPS"}
+    devices = []
+    for name in cases.PUBLISHED_BY_OLD_TOOL:
+        path = read_raw.RAW_DIR / name
+        material, w, l = read_raw.device(path)
+        devices.append({"label": f"{names[material]} · W{w:g}/L{l:g}", "w": w, "l": l,
+                        "points": read_raw.mobility_points(path), "sweep": sweep[name]})
+    lines = ",\n".join(json.dumps(d, ensure_ascii=False, separators=(",", ":")) for d in devices)
+    (ROOT / "site" / "data.json").write_text(f"[\n{lines}\n]\n", encoding="utf-8", newline="\n")
+    print("썼습니다: results/cases.json, results/sweep.json, site/index.html, site/data.json")
