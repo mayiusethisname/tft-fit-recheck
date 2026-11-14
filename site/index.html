@@ -41,6 +41,7 @@ footer{border-top:1px solid #1C2128;padding:24px 0 48px;font-size:.875rem;color:
 .found:first-of-type{border-top:0}
 .found .fig{font-family:'IBM Plex Mono',monospace;font-size:1.75rem;font-weight:600;line-height:1.4;white-space:nowrap}
 .found h3{font-size:1.125rem}
+.found h3 small{font-size:.875rem;font-weight:400;color:#4A5058;margin-left:8px}
 .found p{margin:0}
 .steps{margin:16px 0;padding-left:24px;max-width:720px}
 .steps li{margin-bottom:16px;padding-left:4px}
@@ -74,10 +75,10 @@ footer{border-top:1px solid #1C2128;padding:24px 0 48px;font-size:.875rem;color:
 </style>
 </head>
 <body><div class=wrap>
-<nav><b>TFT 피팅 구간 비교 도구</b><div><a href="#how">계산 방법</a><a href="#materials">재료별 차이</a><a href="#why">만든 이유</a><a href="https://github.com/mayiusethisname/tft-fit-recheck">GitHub</a></div></nav>
+<nav><b>TFT 피팅 구간 비교 도구</b><div><a href="#materials">재료별 차이</a><a href="#how">계산 방법</a><a href="#why">만든 이유</a><a href="https://github.com/mayiusethisname/tft-fit-recheck">GitHub</a></div></nav>
 <header>
 <h1>TFT 측정 파일을 놓으면 이동도를 계산합니다.</h1>
-<p class=sub>이동도는 그래프에 그은 직선의 기울기로 구합니다. 그런데 직선을 어느 구간에 긋느냐에 따라 기울기가 달라집니다. 같은 측정에서 구간만 바꿔도 이동도가 20배까지 달라집니다. 구간을 직접 옮겨 보세요.</p>
+<p class=sub>TFT는 화면의 화소를 켜고 끄는 스위치입니다. 이동도는 그 안에서 전하가 얼마나 잘 움직이는지를 나타내는 값으로, 그래프에 그은 직선의 기울기로 구합니다. 직선을 어느 구간에 긋느냐에 따라 이 값이 20배까지 달라집니다. 구간을 직접 옮겨 보세요.</p>
 </header>
 <section id=tool class=tool>
 <div class=files>
@@ -92,8 +93,8 @@ footer{border-top:1px solid #1C2128;padding:24px 0 48px;font-size:.875rem;color:
 <h2 id=title></h2>
 <svg id=chart viewBox="0 0 480 300" role=img></svg>
 <div class=controls>
-<label>구간 시작 <input type=range id=fromRange step=0.1 aria-label="구간 시작 조절"><input type=number id=from step=0.1> V</label>
-<label>구간 끝 <input type=range id=toRange step=0.1 aria-label="구간 끝 조절"><input type=number id=to step=0.1> V</label>
+<label>구간 시작 <input type=range id=fromRange step=0.1 aria-label="구간 시작 조절"><input type=number id=from step=0.1 aria-label="구간 시작 (V)"> V</label>
+<label>구간 끝 <input type=range id=toRange step=0.1 aria-label="구간 끝 조절"><input type=number id=to step=0.1 aria-label="구간 끝 (V)"> V</label>
 <label>채널 폭 W <input type=number id=w min=0 step=any> µm</label>
 <label>채널 길이 L <input type=number id=l min=0 step=any> µm</label>
 </div>
@@ -103,10 +104,15 @@ footer{border-top:1px solid #1C2128;padding:24px 0 48px;font-size:.875rem;color:
 <div><dt>R²</dt><dd id=r2></dd></div>
 <div><dt>쓴 점</dt><dd id=used></dd></div>
 </dl>
-<p class=note>시작 구간은 측정 범위의 가운데 3분의 1입니다.</p>
+<p class=note>문턱전압은 소자가 켜지기 시작하는 전압입니다. R²는 직선이 점에 맞는 정도로, 1이면 완전히 맞습니다.</p>
 <figure><figcaption>2 V 구간마다 계산한 이동도 <span>단위 cm²/V·s</span></figcaption><div id=bars></div>
-<p class=note style="margin-top:12px">연한 막대는 식의 조건에 맞지 않는 구간입니다. a-IGZO W20/L4는 모든 구간에서 직선이 잘 맞는데도(R² 0.9975 이상) 이동도가 2.87 ~ 56.7, 19.7배 차이 납니다.</p></figure>
+<p class=note style="margin-top:12px">연한 막대는 소자가 다 켜지기 전의 구간입니다(문턱전압이 구간 안이나 뒤에 나옴). a-IGZO W20/L4는 나머지 8개 구간 모두 직선이 잘 맞는데도(R² 0.9975 이상) 이동도가 2.87 ~ 56.7, 19.7배 차이 납니다.</p></figure>
 </div>
+</section>
+<section id=materials>
+<h2>재료마다 다릅니다</h2>
+<p class=sub>계산식은 이동도가 전압과 무관하게 일정하다고 가정합니다. 실제 소자는 그렇지 않아서 구간마다 값이 달라집니다. 2 V 구간을 낮은 전압에서 높은 전압으로 옮기며 구한 이동도입니다(cm²/V·s).</p>
+<div class=found><div class=fig>2.87 → 56.7</div><div><h3>a-IGZO <small>대형 OLED TV에 쓰이는 산화물 반도체</small></h3><p>전압이 올라갈수록 계속 커집니다.</p></div></div><div class=found><div class=fig>0.118 → 0.411</div><div><h3>a-Si <small>LCD에 오래 쓰여 온 비정질 실리콘</small></h3><p>완만하게 커집니다.</p></div></div><div class=found><div class=fig>109 → 184</div><div><h3>LTPS <small>스마트폰 OLED에 쓰이는 저온 폴리실리콘</small></h3><p>-12 ~ -10 V에서 가장 크고, 그 뒤로는 작아집니다.</p></div></div>
 </section>
 <section id=how>
 <h2>계산 방법</h2>
@@ -115,16 +121,11 @@ footer{border-top:1px solid #1C2128;padding:24px 0 48px;font-size:.875rem;color:
 <li><b>고른 구간에 직선을 맞춥니다.</b> 기울기 a가 이동도를 정합니다.<span class=eq>μ = 2·L·a² / (C·W)</span></li>
 <li><b>직선이 전압 축과 만나는 점이 문턱전압입니다.</b><span class=eq>Vth = −b / a</span></li>
 </ol>
-<p class=note>W, L은 채널 폭과 길이, C는 절연막 용량(1.75×10⁻⁸ F/cm²)입니다.</p>
-</section>
-<section id=materials>
-<h2>재료마다 다릅니다</h2>
-<p class=sub>2 V 구간을 낮은 전압에서 높은 전압으로 옮길 때의 이동도(cm²/V·s)입니다. 위의 파일을 눌러 비교해 보세요.</p>
-<div class=found><div class=fig>2.87 → 56.7</div><div><h3>a-IGZO</h3><p>전압이 올라갈수록 계속 커집니다.</p></div></div><div class=found><div class=fig>0.118 → 0.411</div><div><h3>a-Si</h3><p>완만하게 커집니다.</p></div></div><div class=found><div class=fig>109 → 184 → 19.3</div><div><h3>LTPS</h3><p>커졌다가 다시 작아집니다.</p></div></div>
+<p class=note>게이트와 드레인 전압을 함께 올린 측정(포화 영역)에 쓰는 식입니다. W, L은 채널 폭과 길이, C는 절연막 용량(1.75×10⁻⁸ F/cm²)입니다.</p>
 </section>
 <section id=why>
 <h2>만든 이유</h2>
-<p>수업의 측정 파일은 DAT와 CSV가 섞여 있어, 형식마다 그래프 매크로를 따로 짜야 했습니다. 직선 구간은 사람이 눈으로 골랐습니다. 파일을 놓기만 하면 그래프가 나오고, 구간에 따른 차이를 한눈에 볼 수 있게 만들었습니다.</p>
+<p>수업의 측정 파일은 DAT와 CSV가 섞여 있어, 형식마다 그래프 매크로를 따로 짜야 했습니다. 직선 구간은 눈대중으로 골랐습니다. 파일을 놓기만 하면 그래프가 나오고, 구간에 따른 차이를 한눈에 볼 수 있게 만들었습니다.</p>
 </section>
 <section id=next>
 <h2>다음에 더할 것</h2>

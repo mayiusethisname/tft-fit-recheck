@@ -9,7 +9,7 @@ const C_OX = 1.75e-8;
 
 // 칸 하나를 숫자로 바꾼다. '*'나 빈칸처럼 숫자가 아니면 null.
 function toNumber(cell) {
-  return cell === "" || Number.isNaN(Number(cell)) ? null : Number(cell);
+  return /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(cell) ? Number(cell) : null;
 }
 
 // 파일 글자에서 이름이 name 인 측정을 찾아 행 목록을 돌려준다. 행 하나는 {열 이름: 숫자 또는 null}.
@@ -17,7 +17,7 @@ function toNumber(cell) {
 function readSection(text, sep, name) {
   let header = null, inside = false;
   const rows = [];
-  for (const line of text.split(/\r?\n/)) {
+  for (const line of text.split(/\r\n|\r|\n/)) {
     if (line.startsWith("DATA:")) {
       if (inside) break; // 다음 측정이 시작되면 끝
       inside = line.replace(/,/g, " ").trim().split(/\s+/)[1] === name;
@@ -84,13 +84,14 @@ function vthBeforeWindow(r) {
   return turnedOn(r) && sign * r.vth <= Math.min(sign * r.v_from, sign * r.v_to) + 1e-9;
 }
 
-// 전압이 vFrom 과 vTo 사이(양끝 포함)인 점들로 μ와 Vth를 구한다. 점이 3개보다 적으면 null.
+// 전압이 vFrom 과 vTo 사이(양끝 포함)인 점들로 μ와 Vth를 구한다. 점이 3개보다 적거나 전압이 모두 같으면 null.
 function saturationFit(points, w, l, vFrom, vTo) {
   const lo = Math.min(vFrom, vTo) - 1e-9, hi = Math.max(vFrom, vTo) + 1e-9;
   const chosen = points.filter(([v]) => lo <= v && v <= hi).map(([v, i]) => [v, Math.sqrt(Math.abs(i))]);
   if (chosen.length < 3) return null;
   const vs = chosen.map(([v]) => v);
   const [a, b, r2] = lineFit(vs, chosen.map(([, s]) => s));
+  if (!Number.isFinite(a)) return null;
   return {
     v_from: vFrom, v_to: vTo,
     used_from: Math.min(...vs), used_to: Math.max(...vs), // 실제로 쓴 점의 전압 범위
@@ -139,6 +140,7 @@ function select(device) {
     $(id).max = Math.max(...vs);
   }
   const end = vs.reduce((far, v) => (Math.abs(v) > Math.abs(far) ? v : far));
+  device.end = end;
   $("from").value = $("fromRange").value = Math.round((end / 3) * 10) / 10;
   $("to").value = $("toRange").value = Math.round(((2 * end) / 3) * 10) / 10;
   document.querySelectorAll("#icons button").forEach((b, k) => b.setAttribute("aria-pressed", DEVICES[k] === device));
@@ -148,8 +150,8 @@ function select(device) {
 function render() {
   const w = Number($("w").value), l = Number($("l").value), sized = w > 0 && l > 0;
   const r = saturationFit(current.points, w, l, Number($("from").value), Number($("to").value));
-  const on = r && turnedOn(r);
-  $("mu").textContent = !r ? "구간 안의 점이 3개보다 적습니다" : !on ? "계산 안 함 (기울기가 0 이하)"
+  const on = r && r.slope * current.end > 0;
+  $("mu").textContent = !r ? "이 구간으로는 계산할 수 없습니다" : !on ? "계산 안 함 (기울기가 0 이하)"
     : !sized ? "W와 L을 적어 주세요" : `${num(r.mu, 4)} cm²/V·s`;
   $("vth").textContent = on ? `${r.vth.toFixed(2)} V` : "–";
   $("r2").textContent = r ? r.r2.toFixed(4) : "–";
@@ -164,7 +166,8 @@ function drawChart(r, on) {
   const vs = pts.map(([v]) => v), x0 = Math.min(...vs), x1 = Math.max(...vs), top = Math.max(...pts.map(([, s]) => s));
   const X = (v) => 56 + ((v - x0) / (x1 - x0)) * 408, Y = (s) => 256 - (s / top) * 236;
   let svg = `<line x1="56" y1="256" x2="464" y2="256" stroke="#1C2128"/><line x1="56" y1="20" x2="56" y2="256" stroke="#1C2128"/>`;
-  for (let v = Math.ceil(x0 / 5) * 5; v <= x1; v += 5) {
+  const step = x1 - x0 <= 50 ? 5 : Math.ceil((x1 - x0) / 50) * 5;
+  for (let v = Math.ceil(x0 / step) * step; v <= x1; v += step) {
     svg += `<line x1="${X(v)}" y1="256" x2="${X(v)}" y2="261" stroke="#1C2128"/><text x="${X(v)}" y="276" text-anchor="middle">${v}</text>`;
   }
   svg += `<text x="464" y="294" text-anchor="end">전압 (V)</text><text x="50" y="260" text-anchor="end">0</text>` +
@@ -193,9 +196,10 @@ function drawBars(w, l, sized) {
   if (!sized) return;
   const shown = windows(current.points).map(([a, b]) => saturationFit(current.points, w, l, a, b)).filter((r) => r && turnedOn(r));
   const top = Math.max(...shown.map((r) => r.mu));
+  const best = Math.max(...shown.filter(vthBeforeWindow).map((r) => r.mu));
   for (const r of shown) {
     const bar = document.createElement("div");
-    bar.className = "bar " + (r.mu === top ? "max" : vthBeforeWindow(r) ? "" : "off");
+    bar.className = "bar " + (!vthBeforeWindow(r) ? "off" : r.mu === best ? "max" : "");
     bar.innerHTML = `<span class=k>${r.used_from} ~ ${r.used_to} V</span><span class=t><i style="width:${(100 * r.mu) / top}%"></i></span><span class=v>${num(r.mu)}</span>`;
     box.append(bar);
   }
@@ -207,7 +211,7 @@ function loadFile(file) {
   if (file.size > 5e6) return say("읽을 수 없습니다: 파일이 5 MB보다 큽니다");
   file.text().then((text) => {
     const points = mobilityPoints(text, file.name);
-    if (points.length < 3) throw new Error("측정점이 3개보다 적습니다");
+    if (new Set(points.map(([v]) => v)).size < 3) throw new Error("서로 다른 전압이 3개보다 적습니다");
     // 수업 파일의 이름 규칙: 끝 네 자리가 W 두 자리 + L 두 자리 (read_raw.py 의 device 와 같다)
     const m = /^[A-Za-z]+(\d\d)(\d\d)\.[^.]+$/.exec(file.name);
     select({ label: file.name, w: m ? Number(m[1]) : null, l: m ? Number(m[2]) : null, points });
@@ -236,7 +240,8 @@ function start() {
     zone.addEventListener("dragleave", () => zone.classList.remove("over"));
     zone.addEventListener("drop", (e) => {
       zone.classList.remove("over");
-      const device = DEVICES[e.dataTransfer.getData("text/plain")];
+      const k = e.dataTransfer.getData("text/plain");
+      const device = /^\d$/.test(k) ? DEVICES[k] : null; // 바깥에서 끌어온 글자는 무시한다
       if (e.dataTransfer.files.length) loadFile(e.dataTransfer.files[0]);
       else if (device) { select(device); say(""); }
     });
