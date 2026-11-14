@@ -14,9 +14,6 @@ from recheck import cases, read_raw
 ROOT = Path(__file__).resolve().parent.parent
 REPO_URL = "https://github.com/mayiusethisname/tft-fit-recheck"
 
-# 작성자가 명령을 직접 돌려 화면의 숫자와 대조한 날짜. 항목 번호 → "YYYY-MM-DD". 확인한 뒤에만 적는다.
-CONFIRMED = {}
-
 CSS = """
 *{box-sizing:border-box}
 body{margin:0;background:#FFFFFF;color:#1C2128;font-family:Pretendard,system-ui,sans-serif;font-size:1rem;line-height:1.75;word-break:keep-all;overflow-wrap:break-word}
@@ -56,10 +53,6 @@ td:first-child{white-space:nowrap}
 td.n,th.n{font-family:'IBM Plex Mono',monospace;font-size:.875rem;text-align:right;white-space:nowrap}
 th.n{font-family:inherit}
 td.warn{color:#B3361B;font-weight:600}
-.state{white-space:nowrap;font-size:.875rem;font-weight:500}
-.state i{display:inline-block;width:14px;height:14px;border:2px solid #1C2128;margin-right:8px;vertical-align:-2px}
-.state.done i{background:#14525A;border-color:#14525A}
-.state small{display:block;font-family:'IBM Plex Mono',monospace;font-weight:400;margin-left:22px}
 .item{border-top:1px solid #CDD1CC;padding:24px 0 8px}
 .item:first-of-type{border-top:0;padding-top:8px}
 code{font-family:'IBM Plex Mono',monospace;font-size:.875rem;background:#E7E9E5;padding:2px 6px}
@@ -141,12 +134,6 @@ def bars(results, caption, device):
     return "".join(out)
 
 
-def state(n):
-    if n in CONFIRMED:
-        return f'<span class="state done"><i></i>직접 확인함<small>{CONFIRMED[n]}</small></span>'
-    return '<span class=state><i></i>직접 확인 전</span>'
-
-
 def page(c):
     c1, c2, c3, c4, c5 = (c[k] for k in "12345")
     far, near = c2["far"], c2["near"]
@@ -160,7 +147,7 @@ def page(c):
     r2_min = min(r["r2"] for r in far)
 
     checklist = [
-        ("숫자가 원본 그대로인가", f"음수 전류 {c1['total']}개가 양수로 바뀌어 있었습니다"),
+        ("파일의 숫자를 바꾸지 않고 읽었는가", f"음수 전류 {c1['total']}개가 양수로 바뀌어 있었습니다"),
         ("“여러 후보”가 정말 서로 다른가", "후보 3개가 0.5 V씩만 다른 옆 구간이었습니다"),
         ("계산식의 전제가 맞는가", "식은 이동도가 일정하다고 보는데, 실제로는 전압에 따라 달라졌습니다"),
         ("이 자료로 구할 수 있는 값인가", "측정 범위 밖에 있는 값을 계산해 냈습니다"),
@@ -257,19 +244,18 @@ def page(c):
 <section id=checklist>
 <h2>검수 기준표</h2>
 <p class=sub>AI의 결과에서 사람이 직접 확인할 다섯 가지입니다.</p>
-<div class=scroll><table class=check><thead><tr><th scope=col>번호</th><th scope=col style="width:30%">직접 확인할 것</th><th scope=col>이 프로젝트에서 있었던 일</th><th scope=col style="width:144px">확인 상태</th></tr></thead><tbody>"""]
+<div class=scroll><table class=check><thead><tr><th scope=col>번호</th><th scope=col style="width:30%">직접 확인할 것</th><th scope=col>이 프로젝트에서 있었던 일</th></tr></thead><tbody>"""]
     for n, (what, happened) in enumerate(checklist, 1):
         body.append(f"<tr><td class=n style='text-align:left'>{n}</td><td><b>{what}</b></td>"
-                    f"<td><a href='#case{n}' style='color:inherit;text-decoration:none'>{happened}</a></td><td>{state(n)}</td></tr>")
+                    f"<td><a href='#case{n}' style='color:inherit;text-decoration:none'>{happened}</a></td></tr>")
     body.append("""</tbody></table></div>
-<p class=note>“직접 확인 전”은 AI가 계산했고, 작성자가 같은 명령으로 아직 대조하지 않은 항목입니다.</p>
 </section>
 <section id=recalc>
 <h2>다시 계산</h2>
 <p class=sub>항목마다 명령 한 줄로 원본에서 다시 계산합니다.</p>""")
     for n, ((what, _), html) in enumerate(zip(checklist, items), 1):
         body.append(f"<div class=item id=case{n}><h3>{n}. {what}</h3>{html}"
-                    f"<p class=small>다시 계산하는 명령 <code>python -m recheck case {n}</code> &nbsp; {state(n)}</p></div>")
+                    f"<p class=small>다시 계산하는 명령 <code>python -m recheck case {n}</code></p></div>")
     body.append(f"""</section>
 <section id=log>
 <h2>AI 협업 기록</h2>
